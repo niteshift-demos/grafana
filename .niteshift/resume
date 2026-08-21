@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The toolchain lives outside the repository, so make sure it survived the resume
+# before the services try to run yarn, go, or make.
+. .niteshift/files/toolchain.sh

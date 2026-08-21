@@ -1,0 +1,22 @@
+services:
+  - name: grafana-frontend
+    command: |
+      export PATH="/opt/node/bin:$PATH"
+      yarn start
+    stopGracePeriod: 30s
+
+  - name: grafana-backend
+    command: |
+      export PATH="/opt/node/bin:$PATH"
+      make run
+    port: 3000
+    stopGracePeriod: 30s
+    environment:
+      # The preview panel frames the app cross-site, so drop X-Frame-Options and
+      # let the session cookie ride cross-site requests.
+      - name: GF_SECURITY_ALLOW_EMBEDDING
+        value: "true"
+      - name: GF_SECURITY_COOKIE_SAMESITE
+        value: none
+      - name: GF_SECURITY_COOKIE_SECURE
+        value: "true"

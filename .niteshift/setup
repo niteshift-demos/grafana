@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+. .niteshift/files/toolchain.sh
+
+YARN_ENABLE_PROGRESS_BARS=false yarn install --immutable
+
+# Same flags .air.toml builds with, so the backend service's first rebuild hits a warm cache.
+make CGO_ENABLED=0 GO_BUILD_DEV=1 build-go
+
+# The backend serves the bundles from public/build, so they have to exist before it starts.
+yarn dev
