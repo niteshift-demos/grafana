@@ -33,4 +33,6 @@ yarn install --immutable
 go mod download
 # Populate the build cache before the supervised watcher starts.
 make CGO_ENABLED=0 SOURCE_DATE_EPOCH=1767222000 GO_BUILD_DEV=1 build-air
+yarn nx run grafana:themes-generate
+yarn plugin:build
 NODE_ENV=dev yarn exec webpack --config scripts/webpack/webpack.dev.ts --env noTsCheck=1 --env noLint=1
