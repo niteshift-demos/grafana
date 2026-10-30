@@ -18,4 +18,4 @@ services:
       command: python3 .niteshift/files/preview-auth.py
   - name: frontend
     # Grafana serves the watcher's output from public/build on port 3000.
-    command: source .niteshift/files/runtime.sh && yarn start --env noTsCheck=1 --env noLint=1
+    command: source .niteshift/files/runtime.sh && yarn start -- --env noTsCheck=1 --env noLint=1
