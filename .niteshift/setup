@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_name="$(basename "$(cd "$(dirname "$0")/.." && pwd)")"
+cd "${NITESHIFT_CHECKOUT_ROOT:?}/$repo_name"
+source .niteshift/files/runtime.sh
+
+if ! command -v gcc >/dev/null || ! command -v make >/dev/null; then
+  apt-get update
+  apt-get install -y build-essential
+fi
+case "$(uname -m)" in
+  x86_64) node_arch=x64; go_arch=amd64 ;;
+  aarch64) node_arch=arm64; go_arch=arm64 ;;
+  *) echo 'Unsupported architecture' >&2; exit 1 ;;
+esac
+node_version="$(tr -d '\n' < .nvmrc)"
+go_version="$(awk '$1 == "go" { print $2; exit }' go.mod)"
+cache_dir="$(mktemp -d)"
+trap 'rm -rf "$cache_dir"' EXIT
+if [[ ! -x /opt/grafana-node/bin/node ]] || [[ "$(/opt/grafana-node/bin/node --version)" != "$node_version" ]]; then
+  curl --fail --location --retry 3 "https://nodejs.org/dist/$node_version/node-$node_version-linux-$node_arch.tar.xz" -o "$cache_dir/node.tar.xz"
+  mkdir -p /opt/grafana-node
+  tar -xJf "$cache_dir/node.tar.xz" --strip-components=1 -C /opt/grafana-node
+fi
+if [[ ! -x /opt/grafana-go/bin/go ]] || [[ "$(/opt/grafana-go/bin/go version)" != *"go$go_version "* ]]; then
+  curl --fail --location --retry 3 "https://go.dev/dl/go$go_version.linux-$go_arch.tar.gz" -o "$cache_dir/go.tar.gz"
+  mkdir -p /opt/grafana-go
+  tar -xzf "$cache_dir/go.tar.gz" --strip-components=1 -C /opt/grafana-go
+fi
+corepack enable --install-directory /opt/grafana-node/bin
+# Yarn reuses its install state and global cache on warm disks.
+yarn install --immutable
+go mod download
+# Populate the build cache before the supervised watcher starts.
+make CGO_ENABLED=0 SOURCE_DATE_EPOCH=1767222000 GO_BUILD_DEV=1 build-backend
+yarn nx run grafana:themes-generate
+yarn plugin:build
+NODE_ENV=dev yarn exec webpack --config scripts/webpack/webpack.dev.ts --env noTsCheck=1 --env noLint=1

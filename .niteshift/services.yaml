@@ -1,0 +1,21 @@
+services:
+  - name: grafana
+    command: source .niteshift/files/runtime.sh && make run
+    port: 3000
+    environment:
+      - name: GF_SERVER_HTTP_ADDR
+        value: 0.0.0.0
+      - name: GF_SECURITY_ADMIN_PASSWORD
+        value: niteshift-local-dev
+      - name: GF_SECURITY_ALLOW_EMBEDDING
+        value: "true"
+      - name: GF_ANALYTICS_REPORTING_ENABLED
+        value: "false"
+      - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+        value: "false"
+    auth:
+      type: cookie-file
+      command: python3 .niteshift/files/preview-auth.py
+  - name: frontend
+    # Grafana serves the watcher's output from public/build on port 3000.
+    command: source .niteshift/files/runtime.sh && yarn start -- --env noTsCheck=1 --env noLint=1
